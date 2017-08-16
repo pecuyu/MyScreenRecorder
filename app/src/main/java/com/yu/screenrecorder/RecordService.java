@@ -1,7 +1,11 @@
 package com.yu.screenrecorder;
 
 import android.annotation.TargetApi;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
@@ -12,6 +16,9 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.support.annotation.RequiresApi;
+import android.util.Log;
+import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import java.io.File;
@@ -42,6 +49,7 @@ public class RecordService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        Log.e("TAG", "RecordService onCreate");
         HandlerThread serviceThread = new HandlerThread("service_thread",
                 android.os.Process.THREAD_PRIORITY_BACKGROUND);
         serviceThread.start();
@@ -80,6 +88,26 @@ public class RecordService extends Service {
         return true;
     }
 
+
+    /**
+     * 当开始录屏的时候发送录屏通知
+     * 在通知上可以点击停止录屏
+     */
+    @TargetApi(Build.VERSION_CODES.N)
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
+    public void sendRecordingNotification() {
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        Intent i = new Intent();
+        PendingIntent pi = PendingIntent.getActivity(this, 1, i, PendingIntent.FLAG_UPDATE_CURRENT);
+        RemoteViews view=null;
+        Notification noti = new Notification.Builder(this)
+                .setContentText("正在录制...")
+                .setContentIntent(pi)
+                .setCustomContentView(view)
+                .build();
+        manager.notify(1, noti);
+    }
+
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public boolean stopRecord() {
         if (!isRecording) {
@@ -100,6 +128,9 @@ public class RecordService extends Service {
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, mediaRecorder.getSurface(), null, null);
     }
 
+    /**
+     * 初始化Recorder
+     */
     private void initRecorder() {
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
@@ -117,6 +148,11 @@ public class RecordService extends Service {
         }
     }
 
+    /**
+     * 获取保存目录，不存在则创建
+     *
+     * @return
+     */
     public String getSaveDirectory() {
         if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
             String rootDir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + "ScreenRecord" + "/";
@@ -136,6 +172,9 @@ public class RecordService extends Service {
         }
     }
 
+    /**
+     * 控制器
+     */
     class RecorderControlerImpl extends Binder implements IRecorderController {
 
         @Override
