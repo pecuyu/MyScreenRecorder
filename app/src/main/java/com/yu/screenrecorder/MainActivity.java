@@ -2,8 +2,11 @@ package com.yu.screenrecorder;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.media.projection.MediaProjection;
@@ -28,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private MediaProjection mediaProjection;
     private Button startBtn;
     private IRecorderController mRecorderController;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -62,7 +66,9 @@ public class MainActivity extends AppCompatActivity {
                     new String[]{Manifest.permission.RECORD_AUDIO}, AUDIO_REQUEST_CODE);
         }
 
+        registerRecordReceiver();
         Intent intent = new Intent(this, RecordService.class);
+
         bindService(intent, conn, BIND_AUTO_CREATE);
     }
 
@@ -70,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (conn != null) unbindService(conn);
+        unregisterRecordReceiver();
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -108,4 +115,31 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceDisconnected(ComponentName arg0) {
         }
     };
+
+    RecordReceiver recordReceiver;
+
+    private void registerRecordReceiver() {
+        recordReceiver = new RecordReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("com.yu.screenrecorder.RecordService.action_stop_record");
+        registerReceiver(recordReceiver, filter);
+    }
+
+    private void unregisterRecordReceiver() {
+        if (recordReceiver != null) unregisterReceiver(recordReceiver);
+    }
+
+
+
+    class RecordReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            switch (action) {
+                case "com.yu.screenrecorder.RecordService.action_stop_record":
+                    startBtn.setText( R.string.start_record );
+                    break;
+            }
+        }
+    }
 }
