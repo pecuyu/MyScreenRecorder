@@ -1,18 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:orientation="vertical">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingBottom="5dp"
+    android:paddingTop="5dp">
 
     <TextView
         android:id="@+id/id_tv_title_noti"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="20sp"/>
+        android:textSize="16sp" />
 
     <Button
         android:id="@+id/id_btn_stop_noti"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="停止录制"/>
+        android:textSize="16sp"
+        android:padding="3dp"
+        android:text="点击停止录屏" />
 </LinearLayout>

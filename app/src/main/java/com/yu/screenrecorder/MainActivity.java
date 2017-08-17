@@ -146,8 +146,10 @@ public class MainActivity extends AppCompatActivity implements RecordService.OnR
 
     }
 
+    private String lastTime;
     @Override
     public void onRecordUpdate(final String time) {
+        lastTime = time;
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -159,6 +161,7 @@ public class MainActivity extends AppCompatActivity implements RecordService.OnR
     @Override
     public void onRecordStop() {
         startBtn.setText( R.string.start_record );
+        tvRecordInfo.setText("上次录制时长:"+lastTime);
     }
 
 
