@@ -48,23 +48,15 @@ public class MainActivity extends AppCompatActivity {
                     mRecorderController.stopRecord();
                     startBtn.setText(R.string.start_record);
                 } else {
+                    /* Returns an Intent that must passed to startActivityForResult() in order to start screen capture */
                     Intent captureIntent = projectionManager.createScreenCaptureIntent();
+                    /* 发送录屏请求 */
                     startActivityForResult(captureIntent, RECORD_REQUEST_CODE);
                 }
             }
         });
 
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_REQUEST_CODE);
-        }
-
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.RECORD_AUDIO}, AUDIO_REQUEST_CODE);
-        }
+        checkPermission(); /* 检查权限*/
 
         registerRecordReceiver();
         Intent intent = new Intent(this, RecordService.class);
@@ -72,22 +64,39 @@ public class MainActivity extends AppCompatActivity {
         bindService(intent, conn, BIND_AUTO_CREATE);
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (conn != null) unbindService(conn);
-        unregisterRecordReceiver();
+    /** 检查权限*/
+    private void checkPermission() {
+        /* 检查读写权限*/
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_REQUEST_CODE);
+        }
+        /* 检查录制音频权限 */
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.RECORD_AUDIO}, AUDIO_REQUEST_CODE);
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == RECORD_REQUEST_CODE && resultCode == RESULT_OK) {
+            /* 获取屏幕采集的接口 */
             mediaProjection = projectionManager.getMediaProjection(resultCode, data);
             mRecorderController.setMediaProject(mediaProjection);
             mRecorderController.startRecord();
             startBtn.setText(R.string.stop_record);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (conn != null) unbindService(conn);
+        unregisterRecordReceiver();
     }
 
     @Override
