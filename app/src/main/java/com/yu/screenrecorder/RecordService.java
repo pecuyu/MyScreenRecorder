@@ -165,17 +165,26 @@ public class RecordService extends Service {
      * 初始化Recorder
      */
     private void initRecorder() {
+        // 设置音频源
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        // 设置视频源
         mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+        // 设置输出文件的格式
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+        // 设置输出文件
         mediaRecorder.setOutputFile(getSaveDirectory() + System.currentTimeMillis() + ".mp4");
+        // 设置视频的宽高
         mediaRecorder.setVideoSize(width, height);
-        mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+        // 设置音频编码器
         mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-        mediaRecorder.setVideoEncodingBitRate(5 * 1024 * 1024);
-        mediaRecorder.setVideoFrameRate(30);
+        // 设置视频编码器
+        mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+        // 设置视频编码比特率
+        mediaRecorder.setVideoEncodingBitRate(5 * 1024 * 1024);// Call this method before prepare().
+        // 设置要捕捉的视频帧率
+        mediaRecorder.setVideoFrameRate(30); // Must be called after setVideoSource(). Call this after setOutFormat() but before prepare()
         try {
-            mediaRecorder.prepare();
+            mediaRecorder.prepare(); // Prepares the recorder to begin capturing and encoding data
         } catch (IOException e) {
             e.printStackTrace();
         }
