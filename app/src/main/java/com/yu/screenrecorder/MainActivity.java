@@ -20,9 +20,10 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements RecordService.OnRecorderStateChangeListener {
     private static final int RECORD_REQUEST_CODE = 101;
     private static final int STORAGE_REQUEST_CODE = 102;
     private static final int AUDIO_REQUEST_CODE = 103;
@@ -32,12 +33,14 @@ public class MainActivity extends AppCompatActivity {
     private Button startBtn;
     private IRecorderController mRecorderController;
 
+    private TextView tvRecordInfo;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         projectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
         setContentView(R.layout.activity_main);
 
+        tvRecordInfo = (TextView) findViewById(R.id.id_tv_show_record_info);
         startBtn = (Button) findViewById(R.id.start_record);
         startBtn.setEnabled(false);
         startBtn.setOnClickListener(new View.OnClickListener() {
@@ -58,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
         checkPermission(); /* 检查权限*/
 
-        registerRecordReceiver();
+      //  registerRecordReceiver();
         Intent intent = new Intent(this, RecordService.class);
 
         bindService(intent, conn, BIND_AUTO_CREATE);
@@ -96,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (conn != null) unbindService(conn);
-        unregisterRecordReceiver();
+       // unregisterRecordReceiver();
     }
 
     @Override
@@ -116,6 +119,7 @@ public class MainActivity extends AppCompatActivity {
             getWindowManager().getDefaultDisplay().getMetrics(metrics);
             mRecorderController = (IRecorderController) service;
             mRecorderController.setConfig(metrics.widthPixels, metrics.heightPixels, metrics.densityDpi);
+            mRecorderController.setRecordingCallback(MainActivity.this);
             startBtn.setEnabled(true);
             startBtn.setText(mRecorderController.isRecording() ? R.string.stop_record : R.string.start_record);
         }
@@ -126,7 +130,6 @@ public class MainActivity extends AppCompatActivity {
     };
 
     RecordReceiver recordReceiver;
-
     private void registerRecordReceiver() {
         recordReceiver = new RecordReceiver();
         IntentFilter filter = new IntentFilter();
@@ -138,6 +141,25 @@ public class MainActivity extends AppCompatActivity {
         if (recordReceiver != null) unregisterReceiver(recordReceiver);
     }
 
+    @Override
+    public void onRecordStart() {
+
+    }
+
+    @Override
+    public void onRecordUpdate(final String time) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                tvRecordInfo.setText("正在录制:" + time);
+            }
+        });
+    }
+
+    @Override
+    public void onRecordStop() {
+        startBtn.setText( R.string.start_record );
+    }
 
 
     class RecordReceiver extends BroadcastReceiver {

@@ -38,5 +38,12 @@ public interface IRecorderController {
      * @param project
      */
     void setMediaProject(MediaProjection project);
+
+    /**
+     * 设置录制状态改变回调
+     * @param listener
+     */
+    void setRecordingCallback(RecordService.OnRecorderStateChangeListener listener);
+
 }
 

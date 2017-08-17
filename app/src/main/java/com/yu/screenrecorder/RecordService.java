@@ -132,10 +132,16 @@ public class RecordService extends Service {
         mediaRecorder.start();
         isRecording = true;
         sendRecordingNotification("");
+        if (listener!=null) listener.onRecordStart();
         recordHandler.post(new TimerRunnable());
         return true;
     }
 
+    /**
+     * 将数字转化为时间显示
+     * @param count
+     * @return 时间字符串表示
+     */
     private String getStringTime(int count) {
         int hour = count / 3600;
         int min = count % 3600 / 60;
@@ -143,6 +149,9 @@ public class RecordService extends Service {
         return String.format(Locale.CHINA, "%02d:%02d:%02d", hour, min, second);
     }
 
+    /**
+     * 计时
+     */
     private class TimerRunnable implements Runnable {
         private int counter = 0;
 
@@ -151,6 +160,7 @@ public class RecordService extends Service {
             if (isRecording) {
                 String time = getStringTime(counter);
                 sendRecordingNotification(time);
+                if (listener!=null) listener.onRecordUpdate(time);
                 ++counter;
                 recordHandler.postDelayed(this, 1000);
             }
@@ -173,6 +183,7 @@ public class RecordService extends Service {
         mediaRecorder.reset();
         virtualDisplay.release();
         mediaProjection.stop();
+        if (listener!=null) listener.onRecordStop();
         LogUtil.e("TAG", "stopRecord()");
         return true;
     }
@@ -307,6 +318,12 @@ public class RecordService extends Service {
         public void setMediaProject(MediaProjection project) {
             RecordService.this.setMediaProject(project);
         }
+
+        @Override
+        public void setRecordingCallback(OnRecorderStateChangeListener listener) {
+           RecordService.this.setOnRecorderStateChangeListener(listener);
+        }
+
     }
 
     /**
@@ -336,13 +353,24 @@ public class RecordService extends Service {
     }
 
 
-    public interface OnRecorderStateChange {
-        void onStart();
+    OnRecorderStateChangeListener listener;
+    public interface OnRecorderStateChangeListener {
+        /**
+         * called in WorkerThread
+         */
+        void onRecordStart();
 
-        void onUpdate(String time);
+        /**
+         * called in WorkerThread
+         */
+        void onRecordUpdate(String time);
 
-        void onStop();
+        void onRecordStop();
 
+    }
+
+    void setOnRecorderStateChangeListener(OnRecorderStateChangeListener listener) {
+        this.listener = listener;
     }
 
 }
