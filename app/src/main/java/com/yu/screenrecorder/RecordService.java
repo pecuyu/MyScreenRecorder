@@ -19,12 +19,12 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
-import android.support.annotation.RequiresApi;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 
 
 public class RecordService extends Service {
@@ -40,7 +40,8 @@ public class RecordService extends Service {
     RecordReceiver recordReceiver;
     NotificationManager manager;
 
-    Handler recordHandler ;
+    Handler recordHandler;
+
     @Override
     public IBinder onBind(Intent intent) {
         return new RecorderControllerImpl();
@@ -65,17 +66,21 @@ public class RecordService extends Service {
         registerRecordReceiver();
     }
 
-    /** 设置允许应用程序捕获屏幕内容和/或记录系统音频的一个标记 */
-    public void setMediaProject(MediaProjection project) {
+    /**
+     * 设置允许应用程序捕获屏幕内容和/或记录系统音频的一个标记
+     */
+    private void setMediaProject(MediaProjection project) {
         mediaProjection = project;
     }
 
-    public boolean isRecording() {
+    private boolean isRecording() {
         return isRecording;
     }
 
-    /** 配置宽高以及分辨率 */
-    public void setConfig(int width, int height, int dpi) {
+    /**
+     * 配置宽高以及分辨率
+     */
+    private void setConfig(int width, int height, int dpi) {
         this.width = width;
         this.height = height;
         this.dpi = dpi;
@@ -113,10 +118,11 @@ public class RecordService extends Service {
 
     /**
      * 开始录制
+     *
      * @return 成功返回true
      */
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
-    public boolean startRecord() {
+    private boolean startRecord() {
         if (mediaProjection == null || isRecording) {
             return false;
         }
@@ -125,17 +131,39 @@ public class RecordService extends Service {
         createVirtualDisplay();
         mediaRecorder.start();
         isRecording = true;
-        sendRecordingNotification();
+        sendRecordingNotification("");
+        recordHandler.post(new TimerRunnable());
         return true;
     }
 
+    private String getStringTime(int count) {
+        int hour = count / 3600;
+        int min = count % 3600 / 60;
+        int second = count % 60;
+        return String.format(Locale.CHINA, "%02d:%02d:%02d", hour, min, second);
+    }
+
+    private class TimerRunnable implements Runnable {
+        private int counter = 0;
+
+        @Override
+        public void run() {
+            if (isRecording) {
+                String time = getStringTime(counter);
+                sendRecordingNotification(time);
+                ++counter;
+                recordHandler.postDelayed(this, 1000);
+            }
+        }
+    }
 
     /**
      * 结束录制
+     *
      * @return 成功返回 true
      */
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    public boolean stopRecord() {
+    private boolean stopRecord() {
         if (!isRecording) {
             return false;
         }
@@ -152,7 +180,8 @@ public class RecordService extends Service {
     /**
      * 释放MediaRecorder资源
      * <br/>call this method after {@link #stopRecord()}
-     *  @see #stopRecord()
+     *
+     * @see #stopRecord()
      */
     private void releaseRecorder() {
         if (mediaRecorder != null) mediaRecorder.release();
@@ -162,8 +191,8 @@ public class RecordService extends Service {
      * 当开始录屏（{@link #startRecord()}被调用）的时候发送录屏通知
      * 在通知上可以点击停止录屏
      */
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
-    public void sendRecordingNotification() {
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+    private void sendRecordingNotification(String time) {
         LogUtil.e("TAG", "sendRecordingNotification()");
         manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         /* 发送广播的意图 */
@@ -173,7 +202,7 @@ public class RecordService extends Service {
 
         RemoteViews remoteViews = new RemoteViews(getPackageName(), R.layout.item_view_remote);
         remoteViews.setOnClickPendingIntent(R.id.id_btn_stop_noti, pi); // 给停止按钮添加点击事件
-        remoteViews.setTextViewText(R.id.id_tv_title_noti, "正在录制...");
+        remoteViews.setTextViewText(R.id.id_tv_title_noti, "正在录制:" + time);
         Notification noti = new Notification.Builder(this)
                 .setSmallIcon(R.mipmap.ic_launcher)  // 记得设置icon，不然通知发送无效
                 .setContent(remoteViews)
@@ -209,7 +238,9 @@ public class RecordService extends Service {
     }
 
 
-    /** 创建一个虚拟显示来捕捉屏幕的内容 */
+    /**
+     * 创建一个虚拟显示来捕捉屏幕的内容
+     */
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void createVirtualDisplay() {
         virtualDisplay = mediaProjection.createVirtualDisplay("MainScreen", width, height, dpi,
@@ -217,13 +248,12 @@ public class RecordService extends Service {
     }
 
 
-
     /**
      * 获取保存目录，不存在则创建
      *
      * @return 成功则返回存储目录，失败返回null
      */
-    public String getSaveDirectory() {
+    private String getSaveDirectory() {
         /* SD卡是否挂载 */
         if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
             String savedDir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + "ScreenRecord" + "/";
@@ -282,7 +312,7 @@ public class RecordService extends Service {
     /**
      * 处理控制录制的广播
      */
-    class RecordReceiver extends BroadcastReceiver {
+    private class RecordReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -306,8 +336,10 @@ public class RecordService extends Service {
     }
 
 
-    interface OnRecorderStateChange {
+    public interface OnRecorderStateChange {
         void onStart();
+
+        void onUpdate(String time);
 
         void onStop();
 
