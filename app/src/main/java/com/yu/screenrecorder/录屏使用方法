@@ -1,0 +1,30 @@
+1. 创建并初始化MediaRecorder
+        // 创建MediaRecorder
+        // 设置各种格式
+        // 调用prepare准备
+
+2. 请求录屏，并创建MediaProjection
+       Intent captureIntent = projectionManager.createScreenCaptureIntent();
+                        /* 发送录屏请求 */
+       startActivityForResult(captureIntent, RECORD_REQUEST_CODE);
+
+       protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+               if (requestCode == RECORD_REQUEST_CODE && resultCode == RESULT_OK) {
+                   /* 获取屏幕采集的接口 */
+                   mediaProjection = projectionManager.getMediaProjection(resultCode, data);
+                   mRecorderController.setMediaProject(mediaProjection);
+                   mRecorderController.startRecord();
+                   startBtn.setText(R.string.stop_record);
+               }
+           }
+
+3. 通过MediaProjection创建虚拟显示 VirtualDisplay
+    // 创建屏幕镜像，并将其渲染到surface上，以便生成视频文件
+    mediaProjection.createVirtualDisplay("MainScreen", width, height, dpi,
+                    DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, mediaRecorder.getSurface(), null, null);
+
+4. 启动录屏
+    mediaRecorder.start();
+
+5. 结束录屏，释放资源
+

@@ -254,6 +254,9 @@ public class RecordService extends Service {
      */
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void createVirtualDisplay() {
+        // VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR 参数是指创建屏幕镜像，所以我们实际录制内容的是屏幕镜像，
+        // 但内容和实际屏幕是一样的，并且这里我们把 VirtualDisplay 的渲染目标 Surface 设置为
+        // MediaRecorder.getSurface的surface，之后通过 MediaRecorder 将屏幕内容录制下来，并且存成 video 文件
         virtualDisplay = mediaProjection.createVirtualDisplay("MainScreen", width, height, dpi,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, mediaRecorder.getSurface(), null, null);
     }
